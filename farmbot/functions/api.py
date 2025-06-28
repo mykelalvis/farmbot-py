@@ -186,7 +186,12 @@ class ApiConnect():
             self.state.error = None
             description = "Successfully fetched request contents."
             self.state.print_status(description=description)
-            return response.json()
+            try:
+                result = response.json()
+            except (json.JSONDecodeError, requests.exceptions.RequestException):
+                result = self.parse_text(response.text)
+            return result
+
         description = "There was an error processing the request..."
         self.state.print_status(description=description)
         return self.state.error

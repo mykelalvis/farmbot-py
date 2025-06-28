@@ -440,6 +440,23 @@ class TestFarmbot(unittest.TestCase):
         self.assertEqual(result, {'name': 'deleted'})
 
     @patch('requests.request')
+    def test_api_delete_empty_text_return_value(self, mock_request):
+        '''test api_delete function with empty_text return value'''
+        mock_response = Mock()
+        mock_response.status_code = 200
+        mock_response.text = ''
+        mock_response.json.side_effect = json.JSONDecodeError(
+            'error', doc='', pos=0)
+        mock_request.return_value = mock_response
+        result = self.fb.api_delete('points', 12345)
+        mock_request.assert_called_once_with(
+            method='DELETE',
+            url='https://my.farm.bot/api/points/12345',
+            **REQUEST_KWARGS,
+        )
+        self.assertEqual(result, '')
+
+    @patch('requests.request')
     def test_api_delete_with_payload(self, mock_request):
         '''test api_delete: with payload'''
         mock_response = Mock()
