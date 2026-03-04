@@ -54,9 +54,9 @@ class ApiConnect():
             response = requests.request(
                 method=kwargs["method"],
                 url=kwargs["url"],
-                headers=kwargs["headers"],
-                json=kwargs["json"],
-                timeout=kwargs["timeout"])
+                headers=kwargs.get("headers"),
+                json=kwargs.get("json"),
+                timeout=kwargs.get("timeout", self.state.timeout["api"]))
         except requests.exceptions.RequestException as e:
             if isinstance(e, requests.exceptions.SSLError):
                 self.state.error = "ERROR: The server does not support SSL."
@@ -110,6 +110,11 @@ class ApiConnect():
             return parser.read(text)
         return text
 
+    @staticmethod
+    def is_success(status_code):
+        """Check if status code indicates success."""
+        return 200 <= status_code < 300
+
     def request_handling(self, response, make_request):
         """Handle errors associated with different endpoint errors."""
 
@@ -123,13 +128,13 @@ class ApiConnect():
         text = self.parse_text(response.text)
 
         # Handle HTTP status codes
-        if response.status_code == 200:
+        if self.is_success(response.status_code):
             if not make_request:
                 description = "Editing disabled, request not sent."
             else:
                 description = "Successfully sent request via API."
             self.state.print_status(description=description)
-            return 200
+            return response.status_code
         if 400 <= response.status_code < 500:
             err = error_messages.get(response.status_code, response.reason)
             self.state.error = f"CLIENT ERROR {response.status_code}: {err}"
@@ -182,7 +187,7 @@ class ApiConnect():
             response.status_code = 200
             response._content = b'{"edit_requests_disabled": true}'
 
-        if response is not None and self.request_handling(response, make_request) == 200:
+        if response is not None and self.is_success(self.request_handling(response, make_request)):
             self.state.error = None
             description = "Successfully fetched request contents."
             self.state.print_status(description=description)
