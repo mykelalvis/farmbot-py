@@ -625,6 +625,8 @@ class TestFarmbot(unittest.TestCase):
         mock_client = Mock()
         mock_mqtt.return_value = mock_client
         self.fb.connect_broker()
+
+        mock_client.on_connect('', '', '', 0)
         mock_client.username_pw_set.assert_called_once_with(
             username='device_0',
             password='encoded_token_value')
@@ -633,6 +635,27 @@ class TestFarmbot(unittest.TestCase):
             port=1883,
             keepalive=60)
         mock_client.loop_start.assert_called()
+        self.assertIsNone(self.fb.state.error)
+
+    @patch('paho.mqtt.client.Client')
+    def test_connect_broker_fail(self, mock_mqtt):
+        '''Test test_connect_broker command: fail'''
+        mock_client = Mock()
+        mock_mqtt.return_value = mock_client
+        self.fb.connect_broker()
+
+        mock_client.on_connect('', '', '', 4)
+        mock_client.username_pw_set.assert_called_once_with(
+            username='device_0',
+            password='encoded_token_value')
+        mock_client.connect.assert_called_once_with(
+            'mqtt_url',
+            port=1883,
+            keepalive=60)
+        mock_client.loop_start.assert_called()
+        self.assertEqual(
+            self.fb.state.error,
+            'Connection Refused: bad user name or password.')
 
     def test_disconnect_broker(self):
         '''Test disconnect_broker command'''

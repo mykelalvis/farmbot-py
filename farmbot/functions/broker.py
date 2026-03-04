@@ -37,6 +37,17 @@ class BrokerConnect():
             password=self.state.token["token"]["encoded"]
         )
 
+        def on_connect(_client, _obj, _flags, reason_code):
+            """on_connect callback"""
+            status = mqtt.connack_string(reason_code)
+            self.state.print_status(description=status)
+            if reason_code != 0:
+                self.state.error = status
+            else:
+                self.state.error = None
+
+        self.client.on_connect = on_connect
+
         self.client.connect(
             self.state.token["token"]["unencoded"]["mqtt"],
             port=1883,
